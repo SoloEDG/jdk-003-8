@@ -14,20 +14,28 @@ export interface RouteNode {
   title: string;
   influence: Influence;
   next: string[];
+  curse?: string;
 }
 export interface CardInstance {
   id: string;
   key: string;
   upgraded: boolean;
+  origin?: string;
+}
+export type CardKind = "attack" | "skill" | "power" | "curse";
+export interface CurseTrigger {
+  onDraw: "hpLoss" | "discard";
+  amount: number;
 }
 export interface CardSpec {
   key: string;
   name: string;
   cost: number;
-  kind: "attack" | "skill" | "power";
+  kind: CardKind;
   text: string;
-  rarity: "common" | "rare";
+  rarity: "common" | "rare" | "curse";
   effects: Effect[];
+  curse?: CurseTrigger;
 }
 export type Effect = {
   type: "damage" | "block" | "draw" | "poison" | "strength" | "heal" | "energy";
@@ -48,6 +56,7 @@ export interface JourneyContext {
   depth: number;
   kind: NodeKind;
   influence: Influence;
+  curse?: string;
 }
 export interface BattleResult {
   id: string;
@@ -57,6 +66,11 @@ export interface BattleResult {
   gold: number;
   context: JourneyContext;
 }
+export interface CurseRef {
+  id: string;
+  key: string;
+  origin?: string;
+}
 export interface RewardOffer {
   id: string;
   source: string;
@@ -64,11 +78,14 @@ export interface RewardOffer {
   gold: number;
   heal: number;
   claimed: boolean;
+  sealTargets: CurseRef[];
 }
 export interface Purchase {
   id: string;
   card: string;
   price: number;
+  kind?: "card" | "purify";
+  target?: string;
 }
 export interface ExpeditionSummary {
   hp: number;

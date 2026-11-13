@@ -3,18 +3,27 @@ import type {
   Actor,
   BattleResult,
   CardInstance,
+  CurseRef,
   JourneyContext,
 } from "@/shared/domain";
 import { cards } from "@/shared/cards";
 import { uid } from "@/shared/random";
 import { spawnEnemy, enemyIntent, type Enemy } from "../lib/enemies";
-import { makePiles, drawCards, discardHand, type Piles } from "../lib/piles";
 import {
-  resolveEffect,
-  poisonTick,
-  damage,
-  type EffectEvent,
-} from "../lib/effects";
+  makePiles,
+  drawCards,
+  discardHand,
+  discardFromHand,
+  type Piles,
+} from "../lib/piles";
+import { resolveEffect, poisonTick, damage, type EffectEvent } from "../lib/effects";
+export interface CurseStats {
+  draws: Record<string, number>;
+  triggers: number;
+  hpPaid: number;
+  discarded: number;
+  sealedSkips: number;
+}
 interface BattleState {
   id: string;
   context: JourneyContext | null;
@@ -27,6 +36,8 @@ interface BattleState {
   queue: EffectEvent[];
   log: string[];
   result: BattleResult | null;
+  sealed: CurseRef[];
+  curseStats: CurseStats;
 }
 const emptyHero = (): Actor => ({
   hp: 72,
@@ -35,6 +46,13 @@ const emptyHero = (): Actor => ({
   strength: 0,
   poison: 0,
   thorns: 0,
+});
+const emptyCurseStats = (): CurseStats => ({
+  draws: {},
+  triggers: 0,
+  hpPaid: 0,
+  discarded: 0,
+  sealedSkips: 0,
 });
 const state = reactive<BattleState>({
   id: "",
@@ -48,6 +66,8 @@ const state = reactive<BattleState>({
   queue: [],
   log: [],
   result: null,
+  sealed: [],
+  curseStats: emptyCurseStats(),
 });
 export const battleState = readonly(state);
 export function beginBattle(
@@ -55,6 +75,7 @@ export function beginBattle(
   deck: CardInstance[],
   hp: number,
   maxHp: number,
+  seals: CurseRef[] = [],
 ) {
   state.id = uid("battle");
   state.context = context;
@@ -66,8 +87,10 @@ export function beginBattle(
   state.phase = "playing";
   state.queue = [];
   state.result = null;
+  state.sealed = seals.map((s) => ({ ...s }));
+  state.curseStats = emptyCurseStats();
   state.log = ["战斗开始。状态和牌堆仅属于本场遭遇。"];
-  drawCards(state.piles, 5, 1);
+  drawCards(state.piles, 5, 1, applyCurseOnDraw);
 }
 function finish() {
   if (!state.enemy || !state.context) return;
@@ -84,12 +107,48 @@ function finish() {
     state.queue = [];
   }
 }
+function applyCurseOnDraw(card: CardInstance): boolean {
+  const spec = cards[card.key];
+  if (!spec || spec.kind !== "curse" || !spec.curse) return true;
+  const trigger = spec.curse;
+  const sealed = isSealed(card.id);
+  state.curseStats.draws[card.id] = (state.curseStats.draws[card.id] ?? 0) + 1;
+  if (sealed) {
+    state.curseStats.sealedSkips++;
+    state.log.unshift(`${spec.name} 已封印 · 本场抽到但不生效`);
+    return true;
+  }
+  state.curseStats.triggers++;
+  if (trigger.onDraw === "hpLoss") {
+    state.hero.hp = Math.max(0, state.hero.hp - trigger.amount);
+    state.curseStats.hpPaid += trigger.amount;
+    state.log.unshift(`${spec.name} 发作 · 失血 ${trigger.amount}`);
+  } else {
+    const others = state.piles.hand.filter((c) => c.id !== card.id);
+    const normal = others.filter((c) => cards[c.key]?.kind !== "curse");
+    const victims = (normal.length ? normal : others).slice(0, trigger.amount);
+    const removed = discardFromHand(
+      state.piles,
+      victims.map((c) => c.id),
+    );
+    state.curseStats.discarded += removed.length;
+    state.log.unshift(
+      removed.length
+        ? `${spec.name} 发作 · 弃掉 ${removed.length} 张手牌`
+        : `${spec.name} 发作 · 手牌为空`,
+    );
+  }
+  finish();
+  return state.phase === "playing";
+}
 function drain() {
   while (state.queue.length && state.phase === "playing") {
     const event = state.queue.shift()!;
     if (event.effect.type === "draw") {
-      drawCards(state.piles, event.effect.amount, state.turn);
-      state.log.unshift(`抽取 ${event.effect.amount} 张牌`);
+      const before = state.piles.hand.length;
+      drawCards(state.piles, event.effect.amount, state.turn, applyCurseOnDraw);
+      const gained = state.piles.hand.length - before;
+      state.log.unshift(`抽取 ${gained} 张牌`);
     } else if (event.effect.type === "energy") {
       state.energy += event.effect.amount;
     } else if (state.enemy)
@@ -103,12 +162,11 @@ export function playCard(id: string) {
   const card = state.piles.hand.find((c) => c.id === id);
   if (!card) return false;
   const spec = cards[card.key]!;
+  if (spec.kind === "curse") return false;
   if (state.energy < spec.cost) return false;
   state.energy -= spec.cost;
   state.piles.hand = state.piles.hand.filter((c) => c.id !== id);
-  (spec.kind === "power" ? state.piles.exhaust : state.piles.discard).push(
-    card,
-  );
+  (spec.kind === "power" ? state.piles.exhaust : state.piles.discard).push(card);
   state.queue.push(
     ...spec.effects.map((e) => ({
       effect: {
@@ -139,16 +197,30 @@ export function endTurn() {
   state.energy = 3;
   state.hero.block = 0;
   state.enemy.block = state.turn % 3 === 0 ? 5 : 0;
-  drawCards(state.piles, 5, state.turn);
+  drawCards(state.piles, 5, state.turn, applyCurseOnDraw);
 }
 export function currentIntent() {
   return state.enemy ? enemyIntent(state.enemy, state.turn) : 0;
+}
+export function isSealed(id: string) {
+  return state.sealed.some((s) => s.id === id);
 }
 export function exportBattle() {
   return JSON.parse(JSON.stringify(state)) as BattleState;
 }
 export function restoreBattle(d: BattleState) {
-  Object.assign(state, d);
+  Object.assign(state, {
+    ...d,
+    sealed: Array.isArray(d.sealed)
+      ? d.sealed
+          .map((s) =>
+            typeof s === "string"
+              ? { id: s, key: "", origin: undefined }
+              : s,
+          )
+      : [],
+    curseStats: { ...emptyCurseStats(), ...(d.curseStats ?? {}) },
+  });
 }
 export function resetBattle() {
   state.phase = "idle";
@@ -157,4 +229,6 @@ export function resetBattle() {
   state.result = null;
   state.piles = makePiles([], "");
   state.log = [];
+  state.sealed = [];
+  state.curseStats = emptyCurseStats();
 }

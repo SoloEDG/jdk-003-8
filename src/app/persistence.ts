@@ -7,7 +7,7 @@ import { exportSession, restoreSession } from "./session";
 const KEY = "ember-path-v1";
 function snapshot() {
   return {
-    version: 1,
+    version: 2,
     route: exportRoute(),
     battle: exportBattle(),
     deck: exportDeck(),
@@ -30,12 +30,13 @@ export function load() {
   try {
     const d = JSON.parse(raw);
     if (
-      d.version !== 1 ||
+      d.version !== 2 ||
       !Array.isArray(d.deck?.cards) ||
       !Array.isArray(d.route?.visited) ||
       !d.battle?.piles ||
       !Array.isArray(d.reward?.history) ||
       !Array.isArray(d.shop?.stock) ||
+      !Array.isArray(d.deck?.seals) ||
       !d.session
     )
       return false;

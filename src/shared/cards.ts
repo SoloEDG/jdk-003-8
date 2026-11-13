@@ -75,7 +75,43 @@ export const cards: Record<string, CardSpec> = {
       { type: "heal", amount: 3, target: "hero" },
     ],
   },
+  bleedMark: {
+    key: "bleedMark",
+    name: "血迹烙印",
+    cost: 0,
+    kind: "curse",
+    text: "诅咒。抽到时失去 2 生命；不能主动打出。",
+    rarity: "curse",
+    effects: [],
+    curse: { onDraw: "hpLoss", amount: 2 },
+  },
+  rustChain: {
+    key: "rustChain",
+    name: "锈蚀锁链",
+    cost: 0,
+    kind: "curse",
+    text: "诅咒。抽到时弃 1 张手牌；不能主动打出。",
+    rarity: "curse",
+    effects: [],
+    curse: { onDraw: "discard", amount: 1 },
+  },
+  ashWhisper: {
+    key: "ashWhisper",
+    name: "灰烬低语",
+    cost: 0,
+    kind: "curse",
+    text: "诅咒。抽到时失去 3 生命；不能主动打出。",
+    rarity: "curse",
+    effects: [],
+    curse: { onDraw: "hpLoss", amount: 3 },
+  },
 };
+export const curseKeys = Object.keys(cards).filter(
+  (key) => cards[key]!.kind === "curse",
+);
+export function isCurse(key: string) {
+  return cards[key]?.kind === "curse";
+}
 export function cardLabel(key: string) {
   return cards[key]?.name ?? key;
 }

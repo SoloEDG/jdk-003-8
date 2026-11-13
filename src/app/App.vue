@@ -4,7 +4,12 @@ import { RouteMap, routeState } from "@/features/route";
 import { BattlePanel, battleState } from "@/features/battle";
 import { RewardPanel } from "@/features/reward";
 import { ShopPanel } from "@/features/shop";
-import { DeckPanel, deckState } from "@/features/deck";
+import {
+  DeckPanel,
+  deckState,
+  curseCount,
+  CurseLedger,
+} from "@/features/deck";
 import { regionNames } from "@/shared/domain";
 import { session, switchTab } from "./session";
 import { load } from "./persistence";
@@ -76,6 +81,10 @@ const progress = computed(() => (routeState.visited.length / 9) * 100);
           <div>
             <small>牌组</small><b>{{ deckState.cards.length }}</b>
           </div>
+          <div>
+            <small>诅咒</small
+            ><b class="curse-count">{{ curseCount(deckState.cards) }}</b>
+          </div>
         </div>
       </header>
       <div class="message" role="status">
@@ -101,6 +110,7 @@ const progress = computed(() => (routeState.visited.length / 9) * 100);
             v-else-if="session.tab === 'shop'"
             :gold="deckState.hero.gold"
             @buy="commands.buy"
+            @purify="commands.purifyShop"
             @leave="commands.leaveShop"
           /><DeckPanel
             v-else
@@ -108,6 +118,7 @@ const progress = computed(() => (routeState.visited.length / 9) * 100);
             :locked="battleState.phase === 'playing'"
             @upgrade="commands.upgrade"
             @remove="commands.remove"
+            @purify="commands.purify"
             @camp="commands.camp"
           />
         </div>
@@ -136,6 +147,10 @@ const progress = computed(() => (routeState.visited.length / 9) * 100);
               <b>{{ routeState.influence.scarcity }}</b
               ><span>稀缺<small>后续商店涨价</small></span>
             </div>
+          </div>
+          <div class="rail-card curse-rail">
+            <span class="eyebrow">CURSE LEDGER</span>
+            <CurseLedger compact />
           </div>
           <p class="rail-note">“一副牌，一条路。<br />你带走的不止是胜利。”</p>
         </aside>

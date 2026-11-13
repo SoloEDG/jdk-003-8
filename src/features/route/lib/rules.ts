@@ -16,6 +16,7 @@ export function contextFor(
     depth: node.depth,
     kind: node.kind,
     influence: accumulate(influence, node.influence),
+    curse: node.curse,
   };
 }
 export function available(

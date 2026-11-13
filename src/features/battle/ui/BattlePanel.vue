@@ -1,8 +1,14 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { battleState, currentIntent } from "../model/state";
-import { cards } from "@/shared/cards";
+import { cards, isCurse } from "@/shared/cards";
 import ActorCard from "./ActorCard.vue";
 defineEmits<{ play: [id: string]; end: []; settle: [] }>();
+const sealedIds = computed(() => new Set(battleState.sealed.map((s) => s.id)));
+const curseCards = computed(() =>
+  battleState.piles.hand.filter((c) => isCurse(c.key)),
+);
+const stats = computed(() => battleState.curseStats);
 </script>
 <template>
   <section class="panel battle-panel">
@@ -38,28 +44,43 @@ defineEmits<{ play: [id: string]; end: []; settle: [] }>();
           结束回合 →
         </button>
       </div>
+      <div v-if="stats.triggers || stats.sealedSkips" class="curse-ticker">
+        本场诅咒触发 {{ stats.triggers }} 次 · 失血 {{ stats.hpPaid }} · 弃牌
+        {{ stats.discarded }}
+        <span v-if="stats.sealedSkips"> · 封印挡下 {{ stats.sealedSkips }} 次</span>
+      </div>
       <div class="hand">
         <button
           v-for="c in battleState.piles.hand"
           :key="c.id"
           class="playing-card"
+          :class="{ curse: isCurse(c.key), sealed: sealedIds.has(c.id) }"
           :data-hand-id="c.id"
-          :disabled="cards[c.key]!.cost > battleState.energy"
-          @click="$emit('play', c.id)"
+          :disabled="isCurse(c.key) || cards[c.key]!.cost > battleState.energy"
+          @click="isCurse(c.key) ? null : $emit('play', c.id)"
         >
-          <i>{{ cards[c.key]!.cost }}</i
+          <i>{{ isCurse(c.key) ? "✖" : cards[c.key]!.cost }}</i
           ><span>{{
-            cards[c.key]!.kind === "attack"
-              ? "⚔"
-              : cards[c.key]!.kind === "power"
-                ? "✺"
-                : "◇"
+            isCurse(c.key)
+              ? "☠"
+              : cards[c.key]!.kind === "attack"
+                ? "⚔"
+                : cards[c.key]!.kind === "power"
+                  ? "✺"
+                  : "◇"
           }}</span>
           <h3>{{ cards[c.key]!.name }}{{ c.upgraded ? " +" : "" }}</h3>
           <p>{{ cards[c.key]!.text }}<b v-if="c.upgraded"> 效果 +2</b></p>
-          <small>{{ cards[c.key]!.kind.toUpperCase() }}</small>
+          <small>{{
+            isCurse(c.key) ? "CURSE · 不可打出" : cards[c.key]!.kind.toUpperCase()
+          }}</small>
+          <em v-if="sealedIds.has(c.id)" class="seal-tag">本场已封印</em>
         </button>
       </div>
+      <p v-if="curseCards.length" class="muted curse-hint">
+        手牌中有 {{ curseCards.length }} 张诅咒。它们占用手牌且不能打出，会在下次抽到时按自身效果发作。
+        封印只封住指定实例，且仅限本场。
+      </p>
     </div>
     <div
       v-if="battleState.phase === 'won' || battleState.phase === 'lost'"

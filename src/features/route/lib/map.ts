@@ -1,4 +1,13 @@
-import type { RouteNode, Region, NodeKind } from "@/shared/domain";
+import type { Region, RouteNode, NodeKind } from "@/shared/domain";
+import { cards } from "@/shared/cards";
+const regionCurses: Record<Region, string> = {
+  forest: "bleedMark",
+  forge: "rustChain",
+  abyss: "ashWhisper",
+};
+export function nodeCurseLabel(node: RouteNode) {
+  return node.curse ? (cards[node.curse]?.name ?? node.curse) : "";
+}
 export function makeMap(): RouteNode[] {
   const result: RouteNode[] = [];
   const regions: Region[] = ["forest", "forge", "abyss"];
@@ -15,6 +24,9 @@ export function makeMap(): RouteNode[] {
             : lane === 0
               ? "battle"
               : "elite";
+      const curse =
+        kind === "elite" && depth > 0 ? regionCurses[region] : undefined;
+      const curseName = curse ? cards[curse]!.name : "";
       result.push({
         id: `n${depth}-${lane}`,
         region,
@@ -25,12 +37,15 @@ export function makeMap(): RouteNode[] {
           kind === "boss"
             ? "裂隙守望者"
             : kind === "elite"
-              ? "危险的捷径"
+              ? curseName
+                ? `危险捷径 · ${curseName}`
+                : "危险捷径"
               : kind === "shop"
                 ? "游商营地"
                 : kind === "camp"
                   ? "熄风篝火"
                   : "失落哨站",
+        curse,
         influence:
           lane === 0
             ? { heat: 0, favor: 1, scarcity: 0 }

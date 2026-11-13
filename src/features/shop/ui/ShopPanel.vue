@@ -1,9 +1,14 @@
 <script setup lang="ts">
-import { shopState, itemPrice } from "../model/state";
+import { computed } from "vue";
+import { shopState, itemPrice, purifyPrice } from "../model/state";
 import { quoteMessage } from "../lib/pricing";
 import { cards } from "@/shared/cards";
+import { deckState } from "@/features/deck/model/state";
+import { curseBadges, shortId } from "@/features/deck/lib/curse";
 defineProps<{ gold: number }>();
-defineEmits<{ buy: [id: string]; leave: [] }>();
+const purifies = computed(() => deckState.purifications);
+defineEmits<{ buy: [id: string]; purify: [id: string]; leave: [] }>();
+const curses = computed(() => curseBadges(deckState.cards));
 </script>
 <template>
   <section class="panel">
@@ -34,6 +39,29 @@ defineEmits<{ buy: [id: string]; leave: [] }>();
             {{ item.sold ? "已售出" : itemPrice(item.id) + " 金 · 购买" }}
           </button>
         </div>
+      </div>
+      <div class="purify-rack">
+        <div class="curse-head">
+          <span>净化仪式 · 永久移除一个诅咒实例</span>
+          <small>{{ purifyPrice(purifies) }} 金 / 次</small>
+        </div>
+        <p class="muted">
+          净化会修改永久牌组，只移除选中的这一个实例；同名诅咒的其它副本仍会保留。
+        </p>
+        <div v-if="curses.length" class="purify-list">
+          <button
+            v-for="c in curses"
+            :key="c.id"
+            :data-purify="c.id"
+            :disabled="gold < purifyPrice(purifies)"
+            @click="$emit('purify', c.id)"
+          >
+            <b>{{ c.name }}</b>
+            <small>#{{ shortId(c.id) }} · 来自 {{ c.origin || "旅途" }}</small>
+            <em>{{ purifyPrice(purifies) }} 金 · 净化</em>
+          </button>
+        </div>
+        <div v-else class="curse-clear">行囊中没有诅咒。</div>
       </div>
       <button data-action="leave-shop" @click="$emit('leave')">
         收好行囊，继续前进 →

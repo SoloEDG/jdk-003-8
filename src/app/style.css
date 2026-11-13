@@ -617,6 +617,7 @@ details {
 .camp button {
   font-size: 11px;
   margin-right: 10px;
+  margin-bottom: 8px;
 }
 .stock > div {
   display: flex;
@@ -639,6 +640,241 @@ details {
 }
 .stock button {
   font-size: 11px;
+}
+.curse-rule {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.curse-rule > div {
+  border: 1px solid #4b4030;
+  background: #241f18;
+  padding: 15px;
+  border-radius: 4px;
+}
+.curse-rule b {
+  font-size: 12px;
+  color: #dcc38f;
+  letter-spacing: 1px;
+}
+.curse-rule p {
+  margin: 9px 0 0;
+  font-size: 10px;
+  line-height: 1.8;
+  color: #a1947d;
+}
+.curse-rule em {
+  font-style: normal;
+  color: #e0c27f;
+}
+.curse-list {
+  margin-bottom: 18px;
+}
+.curse-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 11px;
+  color: #d6b67d;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #4b4030;
+  margin-bottom: 10px;
+}
+.curse-head small {
+  font-size: 9px;
+  color: #8d7d63;
+}
+.curse-chip,
+.purify-list button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: #2a2117;
+  border-color: #5f4b31;
+  margin-bottom: 7px;
+  padding: 10px 13px;
+}
+.curse-chip b,
+.purify-list b {
+  font-size: 12px;
+  color: #e0b98a;
+}
+.curse-chip small,
+.purify-list small {
+  display: block;
+  font-size: 9px;
+  color: #a08c72;
+  line-height: 1.7;
+  margin-top: 5px;
+}
+.curse-chip em,
+.purify-list em {
+  display: block;
+  font-style: normal;
+  font-size: 9px;
+  color: #877254;
+  margin-top: 7px;
+}
+.curse-chip.sealed {
+  border-color: #7e8f5a;
+}
+.curse-clear {
+  font-size: 10px;
+  color: #7c8d6c;
+  border: 1px dashed #4b5b3a;
+  padding: 12px;
+  margin-bottom: 18px;
+  text-align: center;
+}
+.deck-list button.curse {
+  border-color: #6b5238;
+  background: #2b241b;
+}
+.deck-list button.curse span {
+  color: #e0b98a;
+}
+.playing-card.curse {
+  background: linear-gradient(145deg, #45301f, #241b14);
+  border-color: #7c5a36;
+  opacity: 0.85;
+}
+.playing-card.curse > i,
+.playing-card.curse > span {
+  color: #d5926c;
+  border-color: #a06647;
+}
+.playing-card.curse h3 {
+  color: #e3b393;
+}
+.playing-card.sealed {
+  border-color: #93a667;
+  box-shadow: inset 0 0 0 1px #93a66744;
+}
+.seal-tag {
+  position: absolute;
+  left: 10px;
+  bottom: 8px;
+  font-style: normal;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: #c6d68b;
+}
+.curse-ticker {
+  font-size: 10px;
+  color: #cf9d7c;
+  padding: 6px 0 10px;
+}
+.curse-hint {
+  margin-top: 14px;
+}
+.seal-choice {
+  border: 1px solid #4b5b3a;
+  border-radius: 5px;
+  padding: 15px;
+  margin: 18px 0 0;
+  background: #212a1c;
+}
+.seal-choice .curse-head {
+  border-color: #465338;
+  color: #cdd9a0;
+}
+.seal-chip {
+  display: inline-block;
+  width: calc(50% - 6px);
+  margin: 0 8px 8px 0;
+  text-align: left;
+  background: #2a2318;
+  border-color: #5b5236;
+  font-size: 11px;
+}
+.seal-chip b {
+  color: #ddc391;
+  display: block;
+}
+.seal-chip small {
+  display: block;
+  color: #94866c;
+  font-size: 9px;
+  margin-top: 6px;
+}
+.clear-seal {
+  font-size: 10px;
+  background: none;
+}
+.purify-rack {
+  border: 1px solid #4b4030;
+  border-radius: 5px;
+  padding: 16px;
+  margin: 18px 0;
+  background: #221e17;
+}
+.purify-rack .muted {
+  margin: 0 0 10px;
+}
+.purify-list button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 7px;
+}
+.purify-list small {
+  margin-top: 0;
+}
+.purify-list em {
+  margin-top: 0;
+  color: #d3b47c;
+}
+.toolbar button[data-action="purify"],
+.camp button[data-action="camp-purify"] {
+  border-color: #8a643c;
+  color: #e3bb8b;
+  background: #33271b;
+}
+.curse-tag {
+  color: #d8a879;
+}
+.curse-rail {
+  padding: 16px;
+}
+.curse-rail .curse-head {
+  font-size: 10px;
+}
+.curse-ledger .ledger-row {
+  border: 1px solid #4b4030;
+  background: #241f18;
+  border-radius: 4px;
+  padding: 9px 11px;
+  margin-bottom: 7px;
+}
+.ledger-row b {
+  font-size: 11px;
+  color: #dfb78a;
+}
+.ledger-row small {
+  display: block;
+  font-size: 8px;
+  color: #8c7a60;
+  margin-top: 3px;
+}
+.ledger-row span {
+  display: block;
+  font-size: 9px;
+  color: #a2937c;
+  line-height: 1.6;
+  margin-top: 5px;
+}
+.ledger-row em {
+  display: block;
+  font-style: normal;
+  font-size: 8px;
+  color: #8cab6b;
+  margin-top: 5px;
+}
+
+.curse-count {
+  color: #d39a76;
 }
 footer {
   display: flex;

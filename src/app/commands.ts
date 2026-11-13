@@ -10,20 +10,31 @@ import {
   deckState,
   deckCards,
   addCard,
+  addCurse,
   earnGold,
   spendGold,
   setHp,
   heal,
   upgradeCard,
   removeCard,
+  purifyCard,
+  grantSeal,
+  clearSeals,
+  pendingSeals,
   openCamp,
   useCamp,
   resetDeck,
 } from "@/features/deck";
-import { openReward, claimReward, resetReward } from "@/features/reward";
+import {
+  openReward,
+  claimReward,
+  resetReward,
+  chooseRewardSeal,
+} from "@/features/reward";
 import {
   openShop,
   preparePurchase,
+  preparePurify,
   completePurchase,
   closeShop,
   resetShop,
@@ -52,11 +63,20 @@ export function navigate(id: string) {
     openCamp();
     switchTab("deck");
   } else {
-    beginBattle(c, deckCards(), deckState.hero.hp, deckState.hero.maxHp);
+    const seals = pendingSeals();
+    beginBattle(
+      c,
+      deckCards(),
+      deckState.hero.hp,
+      deckState.hero.maxHp,
+      seals,
+    );
+    clearSeals();
     switchTab("battle");
   }
   notify(
-    `进入 ${c.nodeId} · 威胁 ${c.influence.heat} / 好感 ${c.influence.favor}`,
+    `进入 ${c.nodeId} · 威胁 ${c.influence.heat} / 好感 ${c.influence.favor}` +
+      (c.curse ? ` · 代价：这张险路将带来诅咒` : ""),
   );
   persist();
 }
@@ -71,6 +91,8 @@ export function turn() {
 export function settle() {
   const r = battleState.result;
   if (!r) return;
+  // 封印只属于刚结束的这场战斗，结算即失效。
+  clearSeals();
   if (!r.won) {
     setHp(r.hp);
     finishRun();
@@ -78,10 +100,14 @@ export function settle() {
     persist();
     return;
   }
-  if (openReward(JSON.parse(JSON.stringify(r)))) {
+  // 险路的诅咒在胜利后才真正进入永久牌组。
+  if (r.context.curse) {
+    addCurse(r.context.curse, r.context.nodeId);
+  }
+  if (openReward(JSON.parse(JSON.stringify(r)), deckCards())) {
     setHp(r.hp);
     switchTab("reward");
-    notify("胜利！选择一张牌或跳过卡牌，金币都会结算。");
+    notify("胜利！选择一张牌或封印一个诅咒，金币都会结算。");
   }
   persist();
 }
@@ -91,6 +117,7 @@ export function claim(skip: boolean) {
   if (grant.card) addCard(grant.card);
   earnGold(grant.gold);
   heal(grant.heal);
+  if (grant.seal) grantSeal([grant.seal]);
   resolveRoute();
   if (session.context?.kind === "boss") {
     finishRun();
@@ -113,13 +140,28 @@ export function buy(id: string) {
   notify("交易完成，卡牌已收入牌组。");
   persist();
 }
+export function purifyShop(id: string) {
+  const p = preparePurify(id, deckState.purifications);
+  if (!p || !spendGold(p.price)) {
+    notify("无法净化：金币不足。");
+    return;
+  }
+  if (!purifyCard(id, true)) {
+    earnGold(p.price);
+    notify("无法净化：该诅咒实例已不在永久牌组中。");
+    return;
+  }
+  completePurchase(p);
+  notify("净化完成。这个诅咒实例已永久离开牌组。");
+  persist();
+}
 export function leaveShop() {
   closeShop();
   resolveRoute();
   switchTab("route");
   persist();
 }
-export function camp(action: "rest" | "upgrade") {
+export function camp(action: "rest" | "upgrade" | "purify") {
   if (
     !session.context ||
     session.context.kind !== "camp" ||
@@ -127,7 +169,11 @@ export function camp(action: "rest" | "upgrade") {
   )
     return;
   resolveRoute();
-  notify("篝火逐渐熄灭，你准备好继续上路。");
+  notify(
+    action === "purify"
+      ? "篝火吞掉了这段诅咒，你牺牲了一次强化。"
+      : "篝火逐渐熄灭，你准备好继续上路。",
+  );
   persist();
 }
 export function upgrade(id: string) {
@@ -142,6 +188,19 @@ export function remove(id: string) {
       ? "已移除卡牌。"
       : "无法移除：至少保留五张牌，且需要足够金币。",
   );
+  persist();
+}
+export function purify(id: string) {
+  if (battleState.phase === "playing") return;
+  notify(
+    purifyCard(id)
+      ? "永久净化完成，只移除了这一个诅咒实例。"
+      : "无法净化：只能选择诅咒实例，且需要足够金币。",
+  );
+  persist();
+}
+export function rewardSeal(id: string) {
+  chooseRewardSeal(id);
   persist();
 }
 export function restart() {

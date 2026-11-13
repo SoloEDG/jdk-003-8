@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { routeState, choices, previewRoute } from "../model/state";
 import { regionNames } from "@/shared/domain";
+import { cards } from "@/shared/cards";
 const emit = defineEmits<{ enter: [id: string] }>();
 const allowed = computed(() => choices());
 const layers = computed(() =>
@@ -19,7 +20,8 @@ const symbols = { battle: "⚔", elite: "♜", shop: "⚖", camp: "♨", boss: "
     </div>
     <h2>每一步，留下回响</h2>
     <p class="muted">
-      林地 → 熔铁边境 → 无声深渊。险路增加敌人力量与稀有奖励，安路积累商人好感。
+      林地 → 熔铁边境 → 无声深渊。险路增加敌人力量与稀有奖励，但战斗胜利后会把一张诅咒塞进永久牌组；
+      安路积累商人好感，可用金币或篝火净化诅咒。
     </p>
     <div class="route-scroll">
       <div v-for="(layer, d) in layers" :key="d" class="route-row">
@@ -43,7 +45,10 @@ const symbols = { battle: "⚔", elite: "♜", shop: "⚖", camp: "♨", boss: "
             >{{ node.title
             }}<small
               >{{ regionNames[node.region] }} ·
-              {{ node.lane ? "威胁 +1 / 稀缺 +1" : "好感 +1" }}</small
+              {{ node.lane ? "威胁 +1 / 稀缺 +1" : "好感 +1" }}
+              <span v-if="node.curse" class="curse-tag"
+                >⚿ 诅咒：{{ cards[node.curse]?.name }}</span
+              ></small
             ></span
           ><i>{{ routeState.visited.includes(node.id) ? "✓" : "↗" }}</i>
         </button>

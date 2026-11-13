@@ -1,7 +1,7 @@
 import { reactive, readonly } from "vue";
 import type { JourneyContext, Purchase } from "@/shared/domain";
 import { makeStock, type StockItem } from "../lib/stock";
-import { priceFor } from "../lib/pricing";
+import { priceFor, purifyPriceFor } from "../lib/pricing";
 const state = reactive({
   context: null as JourneyContext | null,
   stock: [] as StockItem[],
@@ -22,12 +22,34 @@ export function itemPrice(id: string) {
     ? priceFor(item.basePrice, state.context.influence)
     : Infinity;
 }
+export function purifyPrice(purifications: number) {
+  return state.context
+    ? purifyPriceFor(purifications, state.context.influence)
+    : Infinity;
+}
 export function preparePurchase(id: string): Purchase | null {
   const item = state.stock.find((s) => s.id === id);
   if (!state.open || !item || item.sold) return null;
-  return { id: item.id, card: item.card, price: itemPrice(id) };
+  return { id: item.id, card: item.card, price: itemPrice(id), kind: "card" };
+}
+export function preparePurify(
+  target: string,
+  purifications: number,
+): Purchase | null {
+  if (!state.open) return null;
+  return {
+    id: `purify-${target}`,
+    card: "purify",
+    price: purifyPrice(purifications),
+    kind: "purify",
+    target,
+  };
 }
 export function completePurchase(p: Purchase) {
+  if (p.kind === "purify") {
+    state.purchases.push(p);
+    return true;
+  }
   const item = state.stock.find((s) => s.id === p.id);
   if (!item || item.sold) return false;
   item.sold = true;
